@@ -75,6 +75,12 @@ export async function POST(request: Request) {
         return (currentPoints || 0) + pointsToAdd
       })
 
+      // Cập nhật lifetimeSpent (tổng chi tiêu tích lũy) để xếp hạng
+      const lifetimeRef = rtdb.ref(`users/profiles/${userKey}/lifetimeSpent`)
+      await lifetimeRef.transaction((current: number | null) => {
+        return (current || 0) + finalAmount
+      })
+
       if (pointsToAdd > 0) {
         console.log(`[Client Complete Booking] Writing point history for userKey: ${userKey} at path: users/profiles/${userKey}/pointHistory`);
         const pointHistoryRef = rtdb.ref(`users/profiles/${userKey}/pointHistory`).push()

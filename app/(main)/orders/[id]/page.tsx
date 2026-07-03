@@ -439,7 +439,7 @@ export default function OrderDetailPage() {
           </Card>
         </section>
 
-        {(isEditing || order.status === "Chờ xác nhận" || order.status === "Đã xác nhận" || order.status === "Đã đến") && (
+        {(isEditing || order.status === "Chờ xác nhận" || order.status === "Đã xác nhận") && (
           <section className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-widest text-primary px-1">Dịch vụ đã chọn</h3>
             <Card className="p-4 border-border/50 space-y-3">
@@ -472,99 +472,109 @@ export default function OrderDetailPage() {
         <section className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-widest text-primary px-1">Chi tiết thanh toán</h3>
           <Card className="p-4 border-border/50 space-y-3 bg-muted/5">
-            {/* Luôn hiển thị Tiền phòng */}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Tiền phòng</span>
-                {isEditing ? (
-                  <Input 
-                    type="number"
-                    value={editForm?.roomPrice || 0}
-                    onChange={e => {
-                      const newRoomPrice = Number(e.target.value) || 0
-                      if (!editForm) return
-                      const servicesTotal = editForm.services.reduce((sum: number, s: any) => sum + (s.price * getQty(s)), 0)
-                      const newSubtotal = newRoomPrice + servicesTotal
-                      let voucherDiscount = 0
-                      const v = editForm.appliedVoucher
-                      if (v && typeof v === 'object') {
-                        if (v.discountAmount) {
-                          voucherDiscount = Math.min(v.discountAmount, newSubtotal)
-                        } else if (v.discountRate) {
-                          voucherDiscount = Math.floor(newSubtotal * v.discountRate)
+            {order.status === "Đã thanh toán" && !isEditing ? (
+              // Khi đã thanh toán: chỉ hiển thị số tiền đã thanh toán
+              <div className="flex justify-between items-center">
+                <span className="text-emerald-600 font-bold text-lg">Đã thanh toán</span>
+                <span className="text-2xl font-bold text-emerald-600">{formatPrice(order.paidAmount || order.finalPrice)}</span>
+              </div>
+            ) : (
+              // Khi chưa thanh toán hoặc đang chỉnh sửa: hiển thị chi tiết đầy đủ
+              <>
+                {/* Tiền phòng */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Tiền phòng</span>
+                  {isEditing ? (
+                    <Input 
+                      type="number"
+                      value={editForm?.roomPrice || 0}
+                      onChange={e => {
+                        const newRoomPrice = Number(e.target.value) || 0
+                        if (!editForm) return
+                        const servicesTotal = editForm.services.reduce((sum: number, s: any) => sum + (s.price * getQty(s)), 0)
+                        const newSubtotal = newRoomPrice + servicesTotal
+                        let voucherDiscount = 0
+                        const v = editForm.appliedVoucher
+                        if (v && typeof v === 'object') {
+                          if (v.discountAmount) {
+                            voucherDiscount = Math.min(v.discountAmount, newSubtotal)
+                          } else if (v.discountRate) {
+                            voucherDiscount = Math.floor(newSubtotal * v.discountRate)
+                          }
                         }
+                        const rewardDiscount = editForm.rewardDiscount || 0
+                        const newFinalPrice = Math.max(0, newSubtotal - voucherDiscount - rewardDiscount)
+                        setEditForm({ 
+                          ...editForm, 
+                          roomPrice: newRoomPrice,
+                          subtotal: newSubtotal,
+                          originalPrice: newSubtotal,
+                          finalPrice: newFinalPrice,
+                          voucherDiscount,
+                        })
+                      }}
+                      className="h-8 py-0 px-2 text-sm bg-background border-primary/30 w-36 text-right"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <span className="font-medium">{formatPrice(order.roomPrice)}</span>
+                  )}
+                </div>
+              
+                {/* Dịch vụ */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Dịch vụ</span>
+                  <span className="font-medium">{formatPrice(isEditing ? (editForm?.servicesTotal || 0) : order.servicesTotal)}</span>
+                </div>
+              
+                <div className="flex justify-between text-sm border-t border-border/20 pt-2">
+                  <span className="text-muted-foreground font-medium">Tạm tính</span>
+                  <span className="font-bold">{formatPrice(isEditing ? (editForm?.subtotal || 0) : order.subtotal)}</span>
+                </div>
+                
+                {order.appliedVoucher && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-600 flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Voucher: {
+                        typeof order.appliedVoucher === 'string' 
+                          ? order.appliedVoucher 
+                          : (order.appliedVoucher?.title || order.appliedVoucher?.code || "Mã giảm giá")
                       }
-                      const rewardDiscount = editForm.rewardDiscount || 0
-                      const newFinalPrice = Math.max(0, newSubtotal - voucherDiscount - rewardDiscount)
-                      setEditForm({ 
-                        ...editForm, 
-                        roomPrice: newRoomPrice,
-                        subtotal: newSubtotal,
-                        originalPrice: newSubtotal,
-                        finalPrice: newFinalPrice,
-                        voucherDiscount,
-                      })
-                    }}
-                    className="h-8 py-0 px-2 text-sm bg-background border-primary/30 w-36 text-right"
-                    placeholder="0"
-                  />
-                ) : (
-                  <span className="font-medium">{formatPrice(order.roomPrice)}</span>
-                )}
-              </div>
-            
-            {/* Luôn hiển thị Dịch vụ */}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Dịch vụ</span>
-                <span className="font-medium">{formatPrice(isEditing ? (editForm?.servicesTotal || 0) : order.servicesTotal)}</span>
-              </div>
-            
-            
-            <div className="flex justify-between text-sm border-t border-border/20 pt-2">
-              <span className="text-muted-foreground font-medium">Tạm tính</span>
-              <span className="font-bold">{formatPrice(isEditing ? (editForm?.subtotal || 0) : order.subtotal)}</span>
-            </div>
-            
-            {order.appliedVoucher && (
-              <div className="flex justify-between text-sm">
-                <span className="text-emerald-600 flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  Voucher: {
-                    typeof order.appliedVoucher === 'string' 
-                      ? order.appliedVoucher 
-                      : (order.appliedVoucher?.title || order.appliedVoucher?.code || "Mã giảm giá")
-                  }
-                </span>
-                <span className="font-bold text-emerald-600">-{formatPrice(order.voucherDiscount)}</span>
-              </div>
-            )}
-            
-            {order.appliedRewardId && (
-              <div className="flex justify-between text-sm">
-                <span className="text-amber-600 flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  <div className="flex flex-col">
-                    <span>Ưu đãi: {order.appliedRewardTitle || order.appliedRewardId || "Phần thưởng đã đổi"}</span>
-                    {order.appliedRewardDescription && <span className="text-xs text-muted-foreground italic">{order.appliedRewardDescription}</span>}
+                    </span>
+                    <span className="font-bold text-emerald-600">-{formatPrice(order.voucherDiscount)}</span>
                   </div>
-                </span>
-                {order.rewardDiscount > 0 && (
-                  <span className="font-bold text-amber-600">-{formatPrice(order.rewardDiscount)}</span>
                 )}
-              </div>
-            )}
-            
-            <Separator className="bg-border/20" />
-            
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-sm font-bold text-foreground uppercase tracking-tight">Tổng thanh toán</span>
-              <span className="text-2xl font-bold text-primary">{formatPrice(isEditing ? (editForm?.finalPrice || 0) : order.finalPrice)}</span>
-            </div>
-            
-            {order.paidAmount > 0 && (
-              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-border/20">
-                <span className="text-emerald-600 font-medium">Đã thanh toán</span>
-                <span className="font-bold text-emerald-600">{formatPrice(order.paidAmount)}</span>
-              </div>
+                
+                {order.appliedRewardId && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-600 flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <div className="flex flex-col">
+                        <span>Ưu đãi: {order.appliedRewardTitle || order.appliedRewardId || "Phần thưởng đã đổi"}</span>
+                        {order.appliedRewardDescription && <span className="text-xs text-muted-foreground italic">{order.appliedRewardDescription}</span>}
+                      </div>
+                    </span>
+                    {order.rewardDiscount > 0 && (
+                      <span className="font-bold text-amber-600">-{formatPrice(order.rewardDiscount)}</span>
+                    )}
+                  </div>
+                )}
+                
+                <Separator className="bg-border/20" />
+                
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-sm font-bold text-foreground uppercase tracking-tight">Tổng thanh toán</span>
+                  <span className="text-2xl font-bold text-primary">{formatPrice(isEditing ? (editForm?.finalPrice || 0) : order.finalPrice)}</span>
+                </div>
+                
+                {order.paidAmount > 0 && (
+                  <div className="flex justify-between text-sm mt-2 pt-2 border-t border-border/20">
+                    <span className="text-emerald-600 font-medium">Đã thanh toán</span>
+                    <span className="font-bold text-emerald-600">{formatPrice(order.paidAmount)}</span>
+                  </div>
+                )}
+              </>
             )}
           </Card>
         </section>
@@ -629,9 +639,6 @@ export default function OrderDetailPage() {
               <Button variant="outline" className="flex-1 bg-background border-red-500/50 text-red-500 hover:bg-red-50" onClick={() => setIsCanceling(true)}>
                 <Ban className="h-4 w-4 mr-2" /> Hủy
               </Button>
-              <Button variant="outline" className="flex-1 bg-background border-accent/50 text-accent hover:bg-accent/10" onClick={() => setIsEditing(true)}>
-                <Pencil className="h-4 w-4 mr-2" /> Sửa
-              </Button>
             </>
           )}
           {order.status === "Đang dùng" && (
@@ -643,8 +650,16 @@ export default function OrderDetailPage() {
               <Button variant="outline" className="flex-1 bg-background border-red-500/50 text-red-500 hover:bg-red-50" onClick={() => setIsCanceling(true)}>
                 <Ban className="h-4 w-4 mr-2" /> Hủy
               </Button>
-              <Button variant="outline" className="flex-1 bg-background border-accent/50 text-accent hover:bg-accent/10" onClick={() => setIsEditing(true)}>
-                <Pencil className="h-4 w-4 mr-2" /> Sửa
+            </>
+          )}
+          {order.status === "Chờ thanh toán" && (
+            <>
+              <Button className="flex-1 bg-green-600 text-white hover:bg-green-700 shadow-lg" onClick={handleCompleteOrder} disabled={isCompleting}>
+                {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                Xác nhận thanh toán
+              </Button>
+              <Button variant="outline" className="flex-1 bg-background border-red-500/50 text-red-500 hover:bg-red-50" onClick={() => setIsCanceling(true)}>
+                <Ban className="h-4 w-4 mr-2" /> Hủy
               </Button>
             </>
           )}

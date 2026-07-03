@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { auth, rtdb } from "@/lib/firebase"
+import { ref, onValue } from "firebase/database"
 import { useState, useEffect } from "react"
 import { fetchUserBookings } from "@/lib/rtdb-utils"
 import { cn } from "@/lib/utils"
+import { getRankBySpending } from "@/lib/rank-utils"
 
 const menuItems = [
   { icon: User, label: "Thông tin cá nhân", href: "/account/profile" },
@@ -24,11 +26,46 @@ export default function AccountPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
   const [orderCount, setOrderCount] = useState(0)
+  const [livePoints, setLivePoints] = useState<number | null>(null)
 
   const handleLogout = async () => {
     await signOut(auth)
     router.push("/login")
   }
+
+  // Real-time listener for points updates
+  useEffect(() => {
+    if (!user?.username) {
+      setLivePoints(null)
+      return
+    }
+
+    const pointsRef = ref(rtdb, `users/profiles/${user.username}/points`)
+    const unsubscribe = onValue(pointsRef, (snapshot) => {
+      const points = snapshot.exists() ? snapshot.val() : 0
+      setLivePoints(points)
+    })
+
+    return () => unsubscribe()
+  }, [user?.username])
+
+  // Real-time listener for lifetimeSpent (tổng chi tiêu tích lũy để xếp hạng)
+  const [liveLifetimeSpent, setLiveLifetimeSpent] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!user?.username) {
+      setLiveLifetimeSpent(null)
+      return
+    }
+
+    const lifetimeRef = ref(rtdb, `users/profiles/${user.username}/lifetimeSpent`)
+    const unsubscribe = onValue(lifetimeRef, (snapshot) => {
+      const spent = snapshot.exists() ? snapshot.val() : 0
+      setLiveLifetimeSpent(spent)
+    })
+
+    return () => unsubscribe()
+  }, [user?.username])
 
   useEffect(() => {
     const loadOrderCount = async () => {
@@ -46,15 +83,10 @@ export default function AccountPage() {
     loadOrderCount()
   }, [user?.uid])
 
-  const getRank = (points: number) => {
-    if (points >= 5000) return { label: "Kim Cương", color: "text-blue-400" }
-    if (points >= 2000) return { label: "Vàng", color: "text-yellow-500" }
-    if (points >= 500) return { label: "Bạc", color: "text-slate-400" }
-    return { label: "Thành viên", color: "text-primary" }
-  }
-
-  const userPoints = user?.points || 0
-  const rank = getRank(userPoints)
+  const displayPoints = livePoints ?? user?.points ?? 0
+  const userPoints = displayPoints
+  const lifetimeSpent = liveLifetimeSpent ?? 0
+  const rank = getRankBySpending(lifetimeSpent)
 
   if (loading) return <div className="min-h-screen flex items-center justify-center italic text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin mr-2" /> Đang xác thực...</div>
 
@@ -84,7 +116,7 @@ export default function AccountPage() {
               <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-200 text-slate-700 border border-slate-300 shadow-sm">
                 {rank.label}
               </span>
-              <span className="text-base font-bold text-primary">{user?.points?.toLocaleString() || 0} điểm</span>
+              <span className="text-base font-bold text-primary">{userPoints.toLocaleString()} điểm</span>
             </div>
           </div>
         </div>

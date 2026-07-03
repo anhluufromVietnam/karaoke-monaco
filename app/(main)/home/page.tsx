@@ -30,7 +30,24 @@ export default function HomePage() {
   const [cardApi, setCardApi] = useState<CarouselApi>()
   const [otherCardApi, setOtherCardApi] = useState<CarouselApi>()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [livePoints, setLivePoints] = useState<number | null>(null)
   const { user, loading } = useAuth()
+
+  // Real-time listener for points updates
+  useEffect(() => {
+    if (!user?.username) {
+      setLivePoints(null)
+      return
+    }
+
+    const pointsRef = ref(rtdb, `users/profiles/${user.username}/points`)
+    const unsubscribe = onValue(pointsRef, (snapshot) => {
+      const points = snapshot.exists() ? snapshot.val() : 0
+      setLivePoints(points)
+    })
+
+    return () => unsubscribe()
+  }, [user?.username])
 
   useEffect(() => {
     const loadPromos = async () => {
@@ -150,7 +167,7 @@ export default function HomePage() {
                 </div>
                 <p className="text-sm text-muted-foreground">Điểm của bạn</p>
                 <p className="text-3xl font-bold text-amber-600">
-                  {user?.points?.toLocaleString() || 0}
+                  {(livePoints ?? user?.points ?? 0).toLocaleString()}
                 </p>
               </div>
             </Card>

@@ -62,6 +62,17 @@ export async function POST(request: Request) {
       updatedAt: now,
     });
 
+    // Tạo thông báo toàn cầu cho khuyến mãi mới
+    const notifRef = rtdb.ref("notifications/global").push();
+    await notifRef.set({
+      title: "🎉 Khuyến mãi mới",
+      description: `${title}${subtitle ? ` - ${subtitle}` : ""}`,
+      href: `/promotions/${id}`,
+      type: "promotion",
+      time: "Mới đây",
+      createdAt: now,
+    });
+
     return NextResponse.json({ message: "Tạo khuyến mãi thành công", id }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ message: "Lỗi hệ thống", error: error.message }, { status: 500 });

@@ -74,8 +74,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+    // Sau khi user đã load xong, gọi API để đồng bộ lịch sử điểm
+    const syncPointHistory = async (uid: string) => {
+      try {
+        const response = await fetch(`/api/point-history?userId=${uid}`)
+        if (response.ok) {
+          const data = await response.json()
+          // API đã tự động cập nhật points trong RTDB, listener sẽ tự động cập nhật UI
+          console.log("Point history synced:", data.points, "points")
+        }
+      } catch (error) {
+        console.error("Failed to sync point history:", error)
+      }
+    }
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       attachUserListener(firebaseUser)
+      
+      // Nếu user đăng nhập thành công, đồng bộ lịch sử điểm
+      if (firebaseUser) {
+        // Đợi một chút để đảm bảo user profile đã được load
+        setTimeout(() => {
+          syncPointHistory(firebaseUser.uid)
+        }, 1000)
+      }
     })
 
     return () => {

@@ -7,19 +7,32 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useAuth } from "@/context/AuthContext"
 import { cn } from "@/lib/utils"
+import { getRankBySpending } from "@/lib/rank-utils"
+import { ref, onValue } from "firebase/database"
+import { rtdb } from "@/lib/firebase"
 
 export default function WalletPage() {
   const { user, loading: authLoading } = useAuth()
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPoints, setCurrentPoints] = useState<number | null>(null)
+  const [liveLifetimeSpent, setLiveLifetimeSpent] = useState<number | null>(null)
 
-  const getRank = (points: number) => {
-    if (points >= 5000) return { label: "Kim Cương", color: "text-blue-400" }
-    if (points >= 2000) return { label: "Vàng", color: "text-yellow-300" }
-    if (points >= 500) return { label: "Bạc", color: "text-slate-300" }
-    return { label: "Thành viên", color: "text-primary-foreground" }
-  }
+  // Real-time listener for lifetimeSpent
+  useEffect(() => {
+    if (!user?.username) {
+      setLiveLifetimeSpent(null)
+      return
+    }
+
+    const lifetimeRef = ref(rtdb, `users/profiles/${user.username}/lifetimeSpent`)
+    const unsubscribe = onValue(lifetimeRef, (snapshot) => {
+      const spent = snapshot.exists() ? snapshot.val() : 0
+      setLiveLifetimeSpent(spent)
+    })
+
+    return () => unsubscribe()
+  }, [user?.username])
 
   useEffect(() => {
     if (user?.uid) {
@@ -47,7 +60,8 @@ export default function WalletPage() {
   if (authLoading) return <div className="min-h-screen flex items-center justify-center italic text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin mr-2" /> Đang tải...</div>
 
   const userPoints = Number(currentPoints ?? user?.points ?? 0)
-  const rank = getRank(userPoints)
+  const lifetimeSpent = liveLifetimeSpent ?? 0
+  const rank = getRankBySpending(lifetimeSpent)
 
   const formatDateTime = (timestamp: number) => {
     if (!timestamp) return ""

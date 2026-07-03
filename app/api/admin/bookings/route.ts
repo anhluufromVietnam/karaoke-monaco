@@ -328,6 +328,12 @@ export async function POST(request: Request) {
               return newPoints;
             });
 
+            // Cập nhật lifetimeSpent (tổng chi tiêu tích lũy) để xếp hạng
+            const lifetimeRef = rtdb.ref(`users/profiles/${userKey}/lifetimeSpent`);
+            await lifetimeRef.transaction((current: number | null) => {
+              return (current || 0) + finalAmount;
+            });
+
             // Lưu lịch sử điểm vào đúng node profile
             const historyRef = rtdb.ref(`users/profiles/${userKey}/pointHistory`).push();
             const historyData = {

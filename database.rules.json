@@ -12,8 +12,8 @@
       },
       "profiles": {
         "$nameKey": {
-          ".read": "auth != null && (data.child('authUid').val() === auth.uid || root.child('users/profiles/' + root.child('users/uidMap/' + auth.uid).val() + '/role').val() === 'admin' || root.child('users/profiles/' + root.child('users/uidMap/' + auth.uid).val() + '/role').val() === 'receptionist')",
-          ".write": "auth != null && (root.child('users/profiles/' + root.child('users/uidMap/' + auth.uid).val() + '/role').val() === 'admin' || (data.child('authUid').val() === auth.uid && newData.child('role').val() === data.child('role').val()))"
+          ".read": "auth != null && (!data.exists() || data.child('authUid').val() === auth.uid || root.child('users/profiles/' + root.child('users/uidMap/' + auth.uid).val() + '/role').val() === 'admin' || root.child('users/profiles/' + root.child('users/uidMap/' + auth.uid).val() + '/role').val() === 'receptionist')",
+          ".write": "auth != null && (!data.exists() && newData.child('authUid').val() === auth.uid || root.child('users/profiles/' + root.child('users/uidMap/' + auth.uid).val() + '/role').val() === 'admin' || (data.exists() && data.child('authUid').val() === auth.uid && newData.child('role').val() === data.child('role').val()))"
         }
       }
     },
