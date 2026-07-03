@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { rtdb, admin } from "@/lib/firebaseAdmin";
+import { calculateBookingPoints, updateUserPoints, sendPointsNotification, resolveUserKey } from "@/lib/points-utils";
 
 export async function POST(request: Request) {
   try {
@@ -44,6 +45,30 @@ export async function POST(request: Request) {
     // Cập nhật status
     await bookingRef.update(updateData);
 
+    // Nếu chuyển sang "Đã thanh toán" thì tính điểm và cập nhật cho user
+    let pointsEarned = 0;
+    if (normalizedStatus === "Đã thanh toán") {
+      const { finalAmount, points } = calculateBookingPoints({ ...bookingData, ...updateData });
+      pointsEarned = points;
+      
+      if (points > 0) {
+        // Cập nhật booking với thông tin điểm
+        await bookingRef.update({
+          pointsEarned: points,
+          finalAmount: finalAmount,
+          paidAmount: finalAmount,
+        });
+
+        // Cập nhật điểm cho user
+        const targetUserId = bookingData?.userId;
+        if (targetUserId && targetUserId !== "guest") {
+          const userKey = await resolveUserKey(targetUserId);
+          await updateUserPoints(targetUserId, userKey, points, finalAmount, bookingId);
+          await sendPointsNotification(targetUserId, points, bookingId);
+        }
+      }
+    }
+
     // Luôn gửi cho chủ đơn hàng, không dùng uid của người thao tác.
     const targetUserId = bookingData?.userId;
     if (targetUserId && targetUserId !== "guest") {
@@ -78,7 +103,7 @@ export async function POST(request: Request) {
         },
         "Đã thanh toán": {
           title: "💰 Thanh toán hoàn tất",
-          description: `Đơn hàng #${bookingId.slice(-6)} đã hoàn tất thanh toán. Cảm ơn và hẹn gặp lại quý khách!`,
+          description: `Đơn hàng #${bookingId.slice(-6)} đã hoàn tất thanh toán. Bạn nhận được ${pointsEarned > 0 ? `${pointsEarned} điểm` : ''}. Cảm ơn và hẹn gặp lại quý khách!`,
         },
       };
 
