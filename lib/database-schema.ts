@@ -36,7 +36,7 @@ export interface User {
   password?: string;
 }
 
-export type BookingStatus = 'Chờ xác nhận' | 'Đã xác nhận' | 'Đã đến' | 'Đang dùng' | 'Đã thanh toán' | 'Đã hủy';
+export type BookingStatus = 'Chờ xác nhận' | 'Đã xác nhận' | 'Chờ đến' | 'Đã đến' | 'Đang dùng' | 'Chờ thanh toán' | 'Đã thanh toán' | 'Đã hủy';
 
 export interface Booking {
   userId: string;
@@ -55,7 +55,14 @@ export interface Booking {
   finalAmount?: number;      // Tổng thanh toán cuối cùng (sau giảm giá)
   paidAmount?: number;       // Số tiền khách đã thanh toán thực tế
   pointsEarned?: number;     // Số điểm tích lũy từ đơn hàng này (để đồng bộ)
+  pendingAt?: number;
+  confirmedAt?: number;
+  waitingAt?: number;
+  arrivedAt?: number;
+  startedAt?: number;
+  paymentPendingAt?: number;
   completedAt?: number;      // Thời điểm thanh toán
+  cancelledAt?: number;
   guestCount?: number;
   guests?: string;
   appliedVoucher?: {

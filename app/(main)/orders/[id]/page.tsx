@@ -63,10 +63,14 @@ function getStatusLabel(status: string) {
       return { text: "Chờ xác nhận", color: "bg-yellow-500/20 text-yellow-500" }
     case "Đã xác nhận":
       return { text: "Đã xác nhận", color: "bg-blue-500/20 text-blue-500" }
+    case "Chờ đến":
+      return { text: "Chờ đến", color: "bg-indigo-500/20 text-indigo-500" }
     case "Đã đến":
       return { text: "Đã đến", color: "bg-cyan-500/20 text-cyan-500" }
     case "Đang dùng":
-      return { text: "Đang sử dụng", color: "bg-purple-500/20 text-purple-500" }
+      return { text: "Đang dùng", color: "bg-purple-500/20 text-purple-500" }
+    case "Chờ thanh toán":
+      return { text: "Chờ thanh toán", color: "bg-amber-500/20 text-amber-500" }
     case "Đã thanh toán":
       return { text: "Đã thanh toán", color: "bg-green-500/20 text-green-500" }
     case "Đã hủy":

@@ -27,8 +27,10 @@ export async function POST(request: Request) {
     const statusTimeField: Record<string, string> = {
       "Chờ xác nhận": "pendingAt",
       "Đã xác nhận": "confirmedAt",
+      "Chờ đến": "waitingAt",
       "Đã đến": "arrivedAt",
       "Đang dùng": "startedAt",
+      "Chờ thanh toán": "paymentPendingAt",
       "Đã thanh toán": "completedAt",
       "Đã hủy": "cancelledAt",
     };
@@ -54,6 +56,10 @@ export async function POST(request: Request) {
           title: "✅ Đơn hàng đã được xác nhận",
           description: `Đơn hàng #${bookingId.slice(-6)} của bạn đã được xác nhận. Chúng tôi đang chuẩn bị dịch vụ cho bạn!`,
         },
+        "Chờ đến": {
+          title: "Đơn hàng đang chờ đến",
+          description: `Đơn hàng #${bookingId.slice(-6)} đã được xác nhận và đang chờ đến giờ phục vụ.`,
+        },
         "Đã đến": {
           title: "Khách đã đến",
           description: `Đơn hàng #${bookingId.slice(-6)} đã được ghi nhận là khách đã đến. Monaco sẽ sắp xếp dịch vụ ngay cho bạn.`,
@@ -61,6 +67,10 @@ export async function POST(request: Request) {
         "Đang dùng": {
           title: "🎤 Bắt đầu dịch vụ",
           description: `Phòng của bạn đã sẵn sàng. Chúc bạn có những phút giây thư giãn tuyệt vời tại Monaco!`,
+        },
+        "Chờ thanh toán": {
+          title: "Đang chờ thanh toán",
+          description: `Đơn hàng #${bookingId.slice(-6)} đang chờ thanh toán. Vui lòng hoàn tất quá trình thanh toán tại quầy.`,
         },
         "Đã hủy": {
           title: "❌ Đơn hàng đã bị hủy",

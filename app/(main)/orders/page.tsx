@@ -12,7 +12,7 @@ import { rtdb } from "@/lib/firebase"
 import { ref, onValue, query, orderByChild, equalTo } from "firebase/database"
 import { BookingStatus } from "@/lib/database-schema"
 
-const filters = ["Tất cả", "Chờ xác nhận", "Đã xác nhận", "Đã đến", "Đang dùng", "Đã thanh toán", "Đã hủy"]
+const filters = ["Tất cả", "Chờ xác nhận", "Đã xác nhận", "Chờ đến", "Đã đến", "Đang dùng", "Chờ thanh toán", "Đã thanh toán", "Đã hủy"]
 
 const roomMapping: Record<string, any> = {
   karaoke: { name: "Karaoke VIP", image: "/images/vip1.jpg" },
@@ -47,12 +47,16 @@ function getStatusLabel(status: string) {
       return { text: "Chờ xác nhận", color: "bg-yellow-500/20 text-yellow-500" }
     case "Đã xác nhận":
       return { text: "Đã xác nhận", color: "bg-blue-500/20 text-blue-500" }
+    case "Chờ đến":
+      return { text: "Chờ đến", color: "bg-indigo-500/20 text-indigo-500" }
     case "Đã đến":
       return { text: "Đã đến", color: "bg-cyan-500/20 text-cyan-500" }
     case "Đang dùng":
-      return { text: "Đang sử dụng", color: "bg-purple-500/20 text-purple-500" }
+      return { text: "Đang dùng", color: "bg-purple-500/20 text-purple-500" }
+    case "Chờ thanh toán":
+      return { text: "Chờ thanh toán", color: "bg-amber-500/20 text-amber-500" }
     case "Đã thanh toán":
-      return { text: "Đã hoàn thành", color: "bg-green-500/20 text-green-500" }
+      return { text: "Đã thanh toán", color: "bg-green-500/20 text-green-500" }
     case "Đã hủy":
       return { text: "Đã hủy", color: "bg-red-500/20 text-red-500" }
     default:
@@ -143,8 +147,10 @@ export default function OrdersPage() {
     if (activeFilter === "Tất cả") return true
     if (activeFilter === "Chờ xác nhận") return order.status === "Chờ xác nhận"
     if (activeFilter === "Đã xác nhận") return order.status === "Đã xác nhận"
+    if (activeFilter === "Chờ đến") return order.status === "Chờ đến"
     if (activeFilter === "Đã đến") return order.status === "Đã đến"
     if (activeFilter === "Đang dùng") return order.status === "Đang dùng"
+    if (activeFilter === "Chờ thanh toán") return order.status === "Chờ thanh toán"
     if (activeFilter === "Đã thanh toán") return order.status === "Đã thanh toán"
     if (activeFilter === "Đã hủy") return order.status === "Đã hủy"
     return true
